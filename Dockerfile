@@ -3,9 +3,8 @@ WORKDIR /app
 
 COPY . .
 
-RUN ls -la
-RUN dotnet restore ./Takas.Api.csproj
-RUN dotnet publish ./Takas.Api.csproj -c Release -o /publish
+RUN dotnet restore "src/Takas.Api/Takas.Api.csproj"
+RUN dotnet publish "src/Takas.Api/Takas.Api.csproj" -c Release -o /publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
