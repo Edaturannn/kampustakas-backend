@@ -3,10 +3,9 @@ WORKDIR /app
 
 COPY . .
 
-RUN PROJECT_FILE=$(find . -name "*.csproj" | head -n 1) && \
-    echo "Using project file: $PROJECT_FILE" && \
-    dotnet restore "$PROJECT_FILE" && \
-    dotnet publish "$PROJECT_FILE" -c Release -o /publish
+RUN ls -la
+RUN dotnet restore ./Takas.Api.csproj
+RUN dotnet publish ./Takas.Api.csproj -c Release -o /publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
