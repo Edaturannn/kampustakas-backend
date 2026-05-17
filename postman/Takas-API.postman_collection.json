@@ -1,0 +1,2314 @@
+{
+  "info": {
+    "_postman_id": "0f9bdcd0-7d86-4f2d-a2a2-2b7a7f0e4c11",
+    "name": "Takas API - Full Postman Collection",
+    "description": "Takas backend icin tam Postman koleksiyonu.\n\nKullanim sirasi:\n1. Auth | Register\n2. Auth | Login\n3. Auth | Me\n4. Protected endpointleri test et\n\nAnaliz sonucu mevcut eksik/dedicated endpoint notlari:\n- Dedicated UsersController yok. Kullaniciya ait endpointler /api/auth/* ve admin /api/admin/users* altinda.\n- Dedicated Product Images endpointi yok. Urun gorselleri Products POST/PUT body icindeki images[] ile yonetiliyor.\n- Dedicated Swaps endpointi yok. Takas akisi Offers accept/reject/cancel ile ilerliyor; DeliveryVerification entitysi public API olarak acilmamis.\n- Dedicated health endpointi yok. Health/Test klasorunde Swagger JSON smoke testi verildi.\n- Kategoriler seed edilmez; admin kullanici gerekirse once Categories | Create ile kategori olusturmalidir.\n\nTum requestler mevcut backend sozlesmesine gore hazirlandi. Korumali endpointlerde Authorization: Bearer {{access_token}} kullanilir.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "description": "JWT tabanli register/login/me endpointleri. Register veya Login cagrisi sonrasinda token otomatik olarak {{access_token}} degiskenine yazilir.",
+      "item": [
+        {
+          "name": "Auth | Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/auth/register",
+            "description": "Method: POST\nURL: {{base_url}}/api/auth/register\nAuthorization: No auth required\nQuery params: None\n\nRequest body example:\n{\n  \"fullName\": \"{{auth_full_name}}\",\n  \"email\": \"{{auth_email}}\",\n  \"password\": \"{{auth_password}}\"\n}\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Kayıt işlemi başarılı.\",\n  \"data\": {\n    \"token\": \"jwt-token-ornek-deger\",\n    \"expiresAt\": \"2026-05-16T14:00:00Z\",\n    \"user\": {\n      \"id\": 2,\n      \"fullName\": \"Eda Turan\",\n      \"email\": \"eda@example.com\",\n      \"phone\": null,\n      \"department\": null,\n      \"campus\": null,\n      \"bio\": null,\n      \"avatarUrl\": null,\n      \"role\": \"User\",\n      \"rating\": 0,\n      \"successfulSwaps\": 0,\n      \"createdAt\": \"2026-05-16T12:00:00Z\"\n    }\n  }\n}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Bu e-posta adresi ile kayıtlı bir kullanıcı zaten var.\",\n  \"errors\": []\n}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"{{auth_full_name}}\",\n  \"email\": \"{{auth_email}}\",\n  \"password\": \"{{auth_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json?.success && json?.data?.token) {",
+                  "  pm.collectionVariables.set(\"access_token\", json.data.token);",
+                  "  if (pm.environment) pm.environment.set(\"access_token\", json.data.token);",
+                  "}",
+                  "if (json?.success && json?.data?.user?.id) {",
+                  "  pm.collectionVariables.set(\"userId\", String(json.data.user.id));",
+                  "  if (pm.environment) pm.environment.set(\"userId\", String(json.data.user.id));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Kayıt işlemi başarılı.\",\n  \"data\": {\n    \"token\": \"jwt-token-ornek-deger\",\n    \"expiresAt\": \"2026-05-16T14:00:00Z\",\n    \"user\": {\n      \"id\": 2,\n      \"fullName\": \"Eda Turan\",\n      \"email\": \"eda@example.com\",\n      \"phone\": null,\n      \"department\": null,\n      \"campus\": null,\n      \"bio\": null,\n      \"avatarUrl\": null,\n      \"role\": \"User\",\n      \"rating\": 0,\n      \"successfulSwaps\": 0,\n      \"createdAt\": \"2026-05-16T12:00:00Z\"\n    }\n  }\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Bu e-posta adresi ile kayıtlı bir kullanıcı zaten var.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Auth | Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/auth/login",
+            "description": "Method: POST\nURL: {{base_url}}/api/auth/login\nAuthorization: No auth required\nQuery params: None\n\nRequest body example:\n{\n  \"email\": \"{{auth_email}}\",\n  \"password\": \"{{auth_password}}\"\n}\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Giriş işlemi başarılı.\",\n  \"data\": {\n    \"token\": \"jwt-token-ornek-deger\",\n    \"expiresAt\": \"2026-05-16T14:00:00Z\",\n    \"user\": {\n      \"id\": 2,\n      \"fullName\": \"Eda Turan\",\n      \"email\": \"eda@example.com\",\n      \"phone\": null,\n      \"department\": null,\n      \"campus\": null,\n      \"bio\": null,\n      \"avatarUrl\": null,\n      \"role\": \"User\",\n      \"rating\": 0,\n      \"successfulSwaps\": 0,\n      \"createdAt\": \"2026-05-16T12:00:00Z\"\n    }\n  }\n}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Şifre hatalı.\",\n  \"errors\": []\n}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{auth_email}}\",\n  \"password\": \"{{auth_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json?.success && json?.data?.token) {",
+                  "  pm.collectionVariables.set(\"access_token\", json.data.token);",
+                  "  if (pm.environment) pm.environment.set(\"access_token\", json.data.token);",
+                  "}",
+                  "if (json?.success && json?.data?.user?.id) {",
+                  "  pm.collectionVariables.set(\"userId\", String(json.data.user.id));",
+                  "  if (pm.environment) pm.environment.set(\"userId\", String(json.data.user.id));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Giriş işlemi başarılı.\",\n  \"data\": {\n    \"token\": \"jwt-token-ornek-deger\",\n    \"expiresAt\": \"2026-05-16T14:00:00Z\",\n    \"user\": {\n      \"id\": 2,\n      \"fullName\": \"Eda Turan\",\n      \"email\": \"eda@example.com\",\n      \"phone\": null,\n      \"department\": null,\n      \"campus\": null,\n      \"bio\": null,\n      \"avatarUrl\": null,\n      \"role\": \"User\",\n      \"rating\": 0,\n      \"successfulSwaps\": 0,\n      \"createdAt\": \"2026-05-16T12:00:00Z\"\n    }\n  }\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Şifre hatalı.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Auth | Me",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/auth/me",
+            "description": "Method: GET\nURL: {{base_url}}/api/auth/me\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Kullanıcı bilgileri getirildi.\",\n  \"data\": {\n    \"id\": 2,\n    \"fullName\": \"Eda Turan\",\n    \"email\": \"eda@example.com\",\n    \"phone\": null,\n    \"department\": null,\n    \"campus\": null,\n    \"bio\": null,\n    \"avatarUrl\": null,\n    \"role\": \"User\",\n    \"rating\": 0,\n    \"successfulSwaps\": 0,\n    \"createdAt\": \"2026-05-16T12:00:00Z\"\n  }\n}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Bu işlem için giriş yapmanız gerekiyor.\",\n  \"errors\": []\n}"
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Kullanıcı bilgileri getirildi.\",\n  \"data\": {\n    \"id\": 2,\n    \"fullName\": \"Eda Turan\",\n    \"email\": \"eda@example.com\",\n    \"phone\": null,\n    \"department\": null,\n    \"campus\": null,\n    \"bio\": null,\n    \"avatarUrl\": null,\n    \"role\": \"User\",\n    \"rating\": 0,\n    \"successfulSwaps\": 0,\n    \"createdAt\": \"2026-05-16T12:00:00Z\"\n  }\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Bu işlem için giriş yapmanız gerekiyor.\",\n  \"errors\": []\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "description": "Urun ve favori akislari. Product create/update requestlerinden once admin kullanici ile Categories | Create cagirip categoryId variable'ini guncelleyebilirsiniz.",
+      "item": [
+        {
+          "name": "Products | Get All",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/products",
+            "description": "Method: GET\nURL: {{base_url}}/api/products\nAuthorization: No auth required\nQuery params: None\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Ürünler getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"ownerId\": 2,\n      \"ownerName\": \"Ornek Ogrenci\",\n      \"ownerAvatarUrl\": null,\n      \"ownerRating\": 4.5,\n      \"categoryId\": 1,\n      \"categoryName\": \"Kitap\",\n      \"title\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n      \"description\": \"Az kullanilmis, notsuz ve temiz durumda.\",\n      \"condition\": \"Cok Iyi\",\n      \"estimatedMinPrice\": 350,\n      \"estimatedMaxPrice\": 500,\n      \"campus\": \"Merkez Kampus\",\n      \"status\": \"Available\",\n      \"viewCount\": 14,\n      \"createdAt\": \"2026-05-13T10:45:00Z\",\n      \"isFavorited\": false,\n      \"images\": [\n        {\n          \"id\": 1,\n          \"imageUrl\": \"https://picsum.photos/id/101/800/600\",\n          \"isMain\": true\n        },\n        {\n          \"id\": 2,\n          \"imageUrl\": \"https://picsum.photos/id/102/800/600\",\n          \"isMain\": false\n        }\n      ]\n    }\n  ],\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Sunucu tarafında beklenmeyen bir hata oluştu.\",\n  \"data\": null,\n  \"errors\": []}"
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Ürünler getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"ownerId\": 2,\n      \"ownerName\": \"Ornek Ogrenci\",\n      \"ownerAvatarUrl\": null,\n      \"ownerRating\": 4.5,\n      \"categoryId\": 1,\n      \"categoryName\": \"Kitap\",\n      \"title\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n      \"description\": \"Az kullanilmis, notsuz ve temiz durumda.\",\n      \"condition\": \"Cok Iyi\",\n      \"estimatedMinPrice\": 350,\n      \"estimatedMaxPrice\": 500,\n      \"campus\": \"Merkez Kampus\",\n      \"status\": \"Available\",\n      \"viewCount\": 14,\n      \"createdAt\": \"2026-05-13T10:45:00Z\",\n      \"isFavorited\": false,\n      \"images\": [\n        {\n          \"id\": 1,\n          \"imageUrl\": \"https://picsum.photos/id/101/800/600\",\n          \"isMain\": true\n        },\n        {\n          \"id\": 2,\n          \"imageUrl\": \"https://picsum.photos/id/102/800/600\",\n          \"isMain\": false\n        }\n      ]\n    }\n  ]\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Internal Server Error",
+              "code": 500,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Sunucu tarafında beklenmeyen bir hata oluştu.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Products | Get By Id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/products/{{productId}}",
+            "description": "Method: GET\nURL: {{base_url}}/api/products/{{productId}}\nAuthorization: No auth required\nQuery params: None\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Ürün detayı getirildi.\",\n  \"data\": {\n    \"id\": 1,\n    \"ownerId\": 2,\n    \"ownerName\": \"Ornek Ogrenci\",\n    \"ownerAvatarUrl\": null,\n    \"ownerRating\": 4.5,\n    \"categoryId\": 1,\n    \"categoryName\": \"Kitap\",\n    \"title\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n    \"description\": \"Az kullanilmis, notsuz ve temiz durumda.\",\n    \"condition\": \"Cok Iyi\",\n    \"estimatedMinPrice\": 350,\n    \"estimatedMaxPrice\": 500,\n    \"campus\": \"Merkez Kampus\",\n    \"status\": \"Available\",\n    \"viewCount\": 15,\n    \"createdAt\": \"2026-05-13T10:45:00Z\",\n    \"isFavorited\": false,\n    \"images\": [\n      {\n        \"id\": 1,\n        \"imageUrl\": \"https://picsum.photos/id/101/800/600\",\n        \"isMain\": true\n      },\n      {\n        \"id\": 2,\n        \"imageUrl\": \"https://picsum.photos/id/102/800/600\",\n        \"isMain\": false\n      }\n    ]\n  },\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Ürün bulunamadı.\",\n  \"data\": null,\n  \"errors\": []}"
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Ürün detayı getirildi.\",\n  \"data\": {\n    \"id\": 1,\n    \"ownerId\": 2,\n    \"ownerName\": \"Ornek Ogrenci\",\n    \"ownerAvatarUrl\": null,\n    \"ownerRating\": 4.5,\n    \"categoryId\": 1,\n    \"categoryName\": \"Kitap\",\n    \"title\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n    \"description\": \"Az kullanilmis, notsuz ve temiz durumda.\",\n    \"condition\": \"Cok Iyi\",\n    \"estimatedMinPrice\": 350,\n    \"estimatedMaxPrice\": 500,\n    \"campus\": \"Merkez Kampus\",\n    \"status\": \"Available\",\n    \"viewCount\": 15,\n    \"createdAt\": \"2026-05-13T10:45:00Z\",\n    \"isFavorited\": false,\n    \"images\": [\n      {\n        \"id\": 1,\n        \"imageUrl\": \"https://picsum.photos/id/101/800/600\",\n        \"isMain\": true\n      },\n      {\n        \"id\": 2,\n        \"imageUrl\": \"https://picsum.photos/id/102/800/600\",\n        \"isMain\": false\n      }\n    ]\n  }\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Ürün bulunamadı.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Products | Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/products",
+            "description": "Method: POST\nURL: {{base_url}}/api/products\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nRequest body example:\n{\n  \"categoryId\": {{categoryId}},\n  \"title\": \"Temiz Kullanilmis Laptop Cantasi\",\n  \"description\": \"Yirtiksiz, temiz ve fermuarlari saglam bir canta.\",\n  \"condition\": \"Iyi\",\n  \"estimatedMinPrice\": 250,\n  \"estimatedMaxPrice\": 400,\n  \"campus\": \"Merkez Kampus\",\n  \"images\": [\n    {\n      \"imageUrl\": \"https://picsum.photos/id/200/800/600\",\n      \"isMain\": true\n    },\n    {\n      \"imageUrl\": \"https://picsum.photos/id/201/800/600\",\n      \"isMain\": false\n    }\n  ]\n}\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Ürün oluşturuldu.\",\n  \"data\": {\n    \"id\": 1,\n    \"ownerId\": 2,\n    \"ownerName\": \"Ornek Ogrenci\",\n    \"ownerAvatarUrl\": null,\n    \"ownerRating\": 4.5,\n    \"categoryId\": 1,\n    \"categoryName\": \"Kitap\",\n    \"title\": \"Temiz Kullanilmis Laptop Cantasi\",\n    \"description\": \"Yirtiksiz, temiz ve fermuarlari saglam bir canta.\",\n    \"condition\": \"Iyi\",\n    \"estimatedMinPrice\": 250,\n    \"estimatedMaxPrice\": 400,\n    \"campus\": \"Merkez Kampus\",\n    \"status\": \"Available\",\n    \"viewCount\": 14,\n    \"createdAt\": \"2026-05-13T10:45:00Z\",\n    \"isFavorited\": false,\n    \"images\": [\n      {\n        \"id\": 3,\n        \"imageUrl\": \"https://picsum.photos/id/200/800/600\",\n        \"isMain\": true\n      },\n      {\n        \"id\": 4,\n        \"imageUrl\": \"https://picsum.photos/id/201/800/600\",\n        \"isMain\": false\n      }\n    ]\n  },\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Minimum fiyat maksimum fiyattan büyük olamaz.\",\n  \"data\": null,\n  \"errors\": []}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": {{categoryId}},\n  \"title\": \"Temiz Kullanilmis Laptop Cantasi\",\n  \"description\": \"Yirtiksiz, temiz ve fermuarlari saglam bir canta.\",\n  \"condition\": \"Iyi\",\n  \"estimatedMinPrice\": 250,\n  \"estimatedMaxPrice\": 400,\n  \"campus\": \"Merkez Kampus\",\n  \"images\": [\n    {\n      \"imageUrl\": \"https://picsum.photos/id/200/800/600\",\n      \"isMain\": true\n    },\n    {\n      \"imageUrl\": \"https://picsum.photos/id/201/800/600\",\n      \"isMain\": false\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Ürün oluşturuldu.\",\n  \"data\": {\n    \"id\": 1,\n    \"ownerId\": 2,\n    \"ownerName\": \"Ornek Ogrenci\",\n    \"ownerAvatarUrl\": null,\n    \"ownerRating\": 4.5,\n    \"categoryId\": 1,\n    \"categoryName\": \"Kitap\",\n    \"title\": \"Temiz Kullanilmis Laptop Cantasi\",\n    \"description\": \"Yirtiksiz, temiz ve fermuarlari saglam bir canta.\",\n    \"condition\": \"Iyi\",\n    \"estimatedMinPrice\": 250,\n    \"estimatedMaxPrice\": 400,\n    \"campus\": \"Merkez Kampus\",\n    \"status\": \"Available\",\n    \"viewCount\": 14,\n    \"createdAt\": \"2026-05-13T10:45:00Z\",\n    \"isFavorited\": false,\n    \"images\": [\n      {\n        \"id\": 3,\n        \"imageUrl\": \"https://picsum.photos/id/200/800/600\",\n        \"isMain\": true\n      },\n      {\n        \"id\": 4,\n        \"imageUrl\": \"https://picsum.photos/id/201/800/600\",\n        \"isMain\": false\n      }\n    ]\n  }\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Minimum fiyat maksimum fiyattan büyük olamaz.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Products | Update",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/products/{{productId}}",
+            "description": "Method: PUT\nURL: {{base_url}}/api/products/{{productId}}\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nRequest body example:\n{\n  \"categoryId\": {{categoryId}},\n  \"title\": \"Guncellenmis Laptop Cantasi\",\n  \"description\": \"Ic bolmeleri duzenli, fermuarlar calisiyor.\",\n  \"condition\": \"Cok Iyi\",\n  \"estimatedMinPrice\": 300,\n  \"estimatedMaxPrice\": 450,\n  \"campus\": \"Kuzey Kampus\",\n  \"images\": [\n    {\n      \"imageUrl\": \"https://picsum.photos/id/210/800/600\",\n      \"isMain\": true\n    }\n  ]\n}\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Ürün güncellendi.\",\n  \"data\": {\n    \"id\": 1,\n    \"ownerId\": 2,\n    \"ownerName\": \"Ornek Ogrenci\",\n    \"ownerAvatarUrl\": null,\n    \"ownerRating\": 4.5,\n    \"categoryId\": 1,\n    \"categoryName\": \"Kitap\",\n    \"title\": \"Guncellenmis Laptop Cantasi\",\n    \"description\": \"Ic bolmeleri duzenli, fermuarlar calisiyor.\",\n    \"condition\": \"Cok Iyi\",\n    \"estimatedMinPrice\": 300,\n    \"estimatedMaxPrice\": 450,\n    \"campus\": \"Kuzey Kampus\",\n    \"status\": \"Available\",\n    \"viewCount\": 14,\n    \"createdAt\": \"2026-05-13T10:45:00Z\",\n    \"isFavorited\": false,\n    \"images\": [\n      {\n        \"id\": 5,\n        \"imageUrl\": \"https://picsum.photos/id/210/800/600\",\n        \"isMain\": true\n      }\n    ]\n  },\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Sadece kendi ürünlerinizi güncelleyebilirsiniz.\",\n  \"data\": null,\n  \"errors\": []}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": {{categoryId}},\n  \"title\": \"Guncellenmis Laptop Cantasi\",\n  \"description\": \"Ic bolmeleri duzenli, fermuarlar calisiyor.\",\n  \"condition\": \"Cok Iyi\",\n  \"estimatedMinPrice\": 300,\n  \"estimatedMaxPrice\": 450,\n  \"campus\": \"Kuzey Kampus\",\n  \"images\": [\n    {\n      \"imageUrl\": \"https://picsum.photos/id/210/800/600\",\n      \"isMain\": true\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Ürün güncellendi.\",\n  \"data\": {\n    \"id\": 1,\n    \"ownerId\": 2,\n    \"ownerName\": \"Ornek Ogrenci\",\n    \"ownerAvatarUrl\": null,\n    \"ownerRating\": 4.5,\n    \"categoryId\": 1,\n    \"categoryName\": \"Kitap\",\n    \"title\": \"Guncellenmis Laptop Cantasi\",\n    \"description\": \"Ic bolmeleri duzenli, fermuarlar calisiyor.\",\n    \"condition\": \"Cok Iyi\",\n    \"estimatedMinPrice\": 300,\n    \"estimatedMaxPrice\": 450,\n    \"campus\": \"Kuzey Kampus\",\n    \"status\": \"Available\",\n    \"viewCount\": 14,\n    \"createdAt\": \"2026-05-13T10:45:00Z\",\n    \"isFavorited\": false,\n    \"images\": [\n      {\n        \"id\": 5,\n        \"imageUrl\": \"https://picsum.photos/id/210/800/600\",\n        \"isMain\": true\n      }\n    ]\n  }\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Sadece kendi ürünlerinizi güncelleyebilirsiniz.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Products | Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/products/{{productId}}",
+            "description": "Method: DELETE\nURL: {{base_url}}/api/products/{{productId}}\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Ürün silindi.\",\n  \"data\": null,\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Ürün bulunamadı.\",\n  \"data\": null,\n  \"errors\": []}"
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Ürün silindi.\"\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Ürün bulunamadı.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Products | Get My Products",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/products/my",
+            "description": "Method: GET\nURL: {{base_url}}/api/products/my\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Kullanıcının ürünleri getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"ownerId\": 2,\n      \"ownerName\": \"Ornek Ogrenci\",\n      \"ownerAvatarUrl\": null,\n      \"ownerRating\": 4.5,\n      \"categoryId\": 1,\n      \"categoryName\": \"Kitap\",\n      \"title\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n      \"description\": \"Az kullanilmis, notsuz ve temiz durumda.\",\n      \"condition\": \"Cok Iyi\",\n      \"estimatedMinPrice\": 350,\n      \"estimatedMaxPrice\": 500,\n      \"campus\": \"Merkez Kampus\",\n      \"status\": \"Available\",\n      \"viewCount\": 14,\n      \"createdAt\": \"2026-05-13T10:45:00Z\",\n      \"isFavorited\": false,\n      \"images\": [\n        {\n          \"id\": 1,\n          \"imageUrl\": \"https://picsum.photos/id/101/800/600\",\n          \"isMain\": true\n        },\n        {\n          \"id\": 2,\n          \"imageUrl\": \"https://picsum.photos/id/102/800/600\",\n          \"isMain\": false\n        }\n      ]\n    }\n  ],\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Bu işlem için giriş yapmanız gerekiyor.\",\n  \"data\": null,\n  \"errors\": []}"
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Kullanıcının ürünleri getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"ownerId\": 2,\n      \"ownerName\": \"Ornek Ogrenci\",\n      \"ownerAvatarUrl\": null,\n      \"ownerRating\": 4.5,\n      \"categoryId\": 1,\n      \"categoryName\": \"Kitap\",\n      \"title\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n      \"description\": \"Az kullanilmis, notsuz ve temiz durumda.\",\n      \"condition\": \"Cok Iyi\",\n      \"estimatedMinPrice\": 350,\n      \"estimatedMaxPrice\": 500,\n      \"campus\": \"Merkez Kampus\",\n      \"status\": \"Available\",\n      \"viewCount\": 14,\n      \"createdAt\": \"2026-05-13T10:45:00Z\",\n      \"isFavorited\": false,\n      \"images\": [\n        {\n          \"id\": 1,\n          \"imageUrl\": \"https://picsum.photos/id/101/800/600\",\n          \"isMain\": true\n        },\n        {\n          \"id\": 2,\n          \"imageUrl\": \"https://picsum.photos/id/102/800/600\",\n          \"isMain\": false\n        }\n      ]\n    }\n  ]\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Bu işlem için giriş yapmanız gerekiyor.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Products | Get By User Id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/products/user/{{userId}}",
+            "description": "Method: GET\nURL: {{base_url}}/api/products/user/{{userId}}\nAuthorization: No auth required\nQuery params: None\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Kullanıcıya ait ürünler getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"ownerId\": 2,\n      \"ownerName\": \"Ornek Ogrenci\",\n      \"ownerAvatarUrl\": null,\n      \"ownerRating\": 4.5,\n      \"categoryId\": 1,\n      \"categoryName\": \"Kitap\",\n      \"title\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n      \"description\": \"Az kullanilmis, notsuz ve temiz durumda.\",\n      \"condition\": \"Cok Iyi\",\n      \"estimatedMinPrice\": 350,\n      \"estimatedMaxPrice\": 500,\n      \"campus\": \"Merkez Kampus\",\n      \"status\": \"Available\",\n      \"viewCount\": 14,\n      \"createdAt\": \"2026-05-13T10:45:00Z\",\n      \"isFavorited\": false,\n      \"images\": [\n        {\n          \"id\": 1,\n          \"imageUrl\": \"https://picsum.photos/id/101/800/600\",\n          \"isMain\": true\n        },\n        {\n          \"id\": 2,\n          \"imageUrl\": \"https://picsum.photos/id/102/800/600\",\n          \"isMain\": false\n        }\n      ]\n    }\n  ],\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Kullanıcı bulunamadı.\",\n  \"data\": null,\n  \"errors\": []}"
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Kullanıcıya ait ürünler getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"ownerId\": 2,\n      \"ownerName\": \"Ornek Ogrenci\",\n      \"ownerAvatarUrl\": null,\n      \"ownerRating\": 4.5,\n      \"categoryId\": 1,\n      \"categoryName\": \"Kitap\",\n      \"title\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n      \"description\": \"Az kullanilmis, notsuz ve temiz durumda.\",\n      \"condition\": \"Cok Iyi\",\n      \"estimatedMinPrice\": 350,\n      \"estimatedMaxPrice\": 500,\n      \"campus\": \"Merkez Kampus\",\n      \"status\": \"Available\",\n      \"viewCount\": 14,\n      \"createdAt\": \"2026-05-13T10:45:00Z\",\n      \"isFavorited\": false,\n      \"images\": [\n        {\n          \"id\": 1,\n          \"imageUrl\": \"https://picsum.photos/id/101/800/600\",\n          \"isMain\": true\n        },\n        {\n          \"id\": 2,\n          \"imageUrl\": \"https://picsum.photos/id/102/800/600\",\n          \"isMain\": false\n        }\n      ]\n    }\n  ]\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Kullanıcı bulunamadı.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Favorites | Add Product To Favorites",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/favorites/{{productId}}",
+            "description": "Method: POST\nURL: {{base_url}}/api/favorites/{{productId}}\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Ürün favorilere eklendi.\",\n  \"data\": {\n    \"id\": 1,\n    \"productId\": 1,\n    \"productTitle\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n    \"categoryName\": \"Kitap\",\n    \"ownerId\": 2,\n    \"ownerName\": \"Ornek Ogrenci\",\n    \"mainImageUrl\": \"https://picsum.photos/id/101/800/600\",\n    \"status\": \"Available\",\n    \"createdAt\": \"2026-05-13T10:45:00Z\"\n  },\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Bu ürün zaten favorilerinizde.\",\n  \"data\": null,\n  \"errors\": []}"
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Ürün favorilere eklendi.\",\n  \"data\": {\n    \"id\": 1,\n    \"productId\": 1,\n    \"productTitle\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n    \"categoryName\": \"Kitap\",\n    \"ownerId\": 2,\n    \"ownerName\": \"Ornek Ogrenci\",\n    \"mainImageUrl\": \"https://picsum.photos/id/101/800/600\",\n    \"status\": \"Available\",\n    \"createdAt\": \"2026-05-13T10:45:00Z\"\n  }\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Bu ürün zaten favorilerinizde.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Favorites | Remove Product From Favorites",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/favorites/{{productId}}",
+            "description": "Method: DELETE\nURL: {{base_url}}/api/favorites/{{productId}}\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Ürün favorilerden çıkarıldı.\",\n  \"data\": null,\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Favori kaydı bulunamadı.\",\n  \"data\": null,\n  \"errors\": []}"
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Ürün favorilerden çıkarıldı.\"\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Favori kaydı bulunamadı.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Favorites | Get My Favorites",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/favorites",
+            "description": "Method: GET\nURL: {{base_url}}/api/favorites\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Favoriler getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"productId\": 1,\n      \"productTitle\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n      \"categoryName\": \"Kitap\",\n      \"ownerId\": 2,\n      \"ownerName\": \"Ornek Ogrenci\",\n      \"mainImageUrl\": \"https://picsum.photos/id/101/800/600\",\n      \"status\": \"Available\",\n      \"createdAt\": \"2026-05-13T10:45:00Z\"\n    }\n  ],\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Bu işlem için giriş yapmanız gerekiyor.\",\n  \"data\": null,\n  \"errors\": []}"
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Favoriler getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"productId\": 1,\n      \"productTitle\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n      \"categoryName\": \"Kitap\",\n      \"ownerId\": 2,\n      \"ownerName\": \"Ornek Ogrenci\",\n      \"mainImageUrl\": \"https://picsum.photos/id/101/800/600\",\n      \"status\": \"Available\",\n      \"createdAt\": \"2026-05-13T10:45:00Z\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Bu işlem için giriş yapmanız gerekiyor.\",\n  \"errors\": []\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Categories",
+      "description": "Kategori endpointleri. Kategoriler artik statik seed edilmez; admin kullanici bu endpoint ile kategori ekler. Create requesti basarili olursa categoryId collection variable'i otomatik guncellenir.",
+      "item": [
+        {
+          "name": "Categories | Get All",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/categories",
+            "description": "Method: GET\nURL: {{base_url}}/api/categories\nAuthorization: No auth required\nQuery params: None\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Kategoriler getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"name\": \"Ders Kitaplari\"\n    },\n    {\n      \"id\": 2,\n      \"name\": \"Elektrikli Scooter\"\n    }\n  ],\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Sunucu tarafında beklenmeyen bir hata oluştu.\",\n  \"data\": null,\n  \"errors\": []}"
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Kategoriler getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"name\": \"Ders Kitaplari\"\n    },\n    {\n      \"id\": 2,\n      \"name\": \"Elektrikli Scooter\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Internal Server Error",
+              "code": 500,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Sunucu tarafında beklenmeyen bir hata oluştu.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Categories | Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/categories",
+            "description": "Method: POST\nURL: {{base_url}}/api/categories\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nRequest body example:\n{\n  \"name\": \"Elektrikli Scooter\"\n}\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Kategori oluşturuldu.\",\n  \"data\": {\n    \"id\": 6,\n    \"name\": \"Elektrikli Scooter\"\n  },\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Bu kategori zaten mevcut.\",\n  \"data\": null,\n  \"errors\": []}\n\nNote: Bu endpoint yalnizca Admin rolune aciktir. Basarili olursa categoryId collection variable'i donen kategori id'si ile guncellenir.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Elektrikli Scooter\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json?.data?.id) {",
+                  "  pm.collectionVariables.set(\"categoryId\", String(json.data.id));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Kategori oluşturuldu.\",\n  \"data\": {\n    \"id\": 6,\n    \"name\": \"Elektrikli Scooter\"\n  }\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Bu kategori zaten mevcut.\",\n  \"errors\": []\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Product Images",
+      "description": "Dedicated Product Images controller/endpointi yok. Urun gorselleri Products create/update body icindeki images[] alaninda yonetilir.",
+      "item": []
+    },
+    {
+      "name": "Offers",
+      "description": "Teklif olusturma ve teklif durumu endpointleri.",
+      "item": [
+        {
+          "name": "Offers | Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/offers",
+            "description": "Method: POST\nURL: {{base_url}}/api/offers\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nRequest body example:\n{\n  \"productId\": {{productId}},\n  \"offeredProductId\": null,\n  \"cashAmount\": 450,\n  \"message\": \"Nakit odeme ile ayni gun teslim alabilirim.\"\n}\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Teklif oluşturuldu.\",\n  \"data\": {\n    \"id\": 1,\n    \"productId\": 1,\n    \"productTitle\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n    \"productOwnerId\": 2,\n    \"productOwnerName\": \"Ornek Ogrenci\",\n    \"senderId\": 1,\n    \"senderName\": \"Sistem Yoneticisi\",\n    \"offeredProductId\": null,\n    \"offeredProductTitle\": null,\n    \"cashAmount\": 450,\n    \"message\": \"Nakit odeme ile ayni gun teslim alabilirim.\",\n    \"status\": \"Pending\",\n    \"createdAt\": \"2026-05-13T12:10:00Z\"\n  },\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Bu ürün için zaten bekleyen bir teklifiniz var.\",\n  \"data\": null,\n  \"errors\": []}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": {{productId}},\n  \"offeredProductId\": null,\n  \"cashAmount\": 450,\n  \"message\": \"Nakit odeme ile ayni gun teslim alabilirim.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Teklif oluşturuldu.\",\n  \"data\": {\n    \"id\": 1,\n    \"productId\": 1,\n    \"productTitle\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n    \"productOwnerId\": 2,\n    \"productOwnerName\": \"Ornek Ogrenci\",\n    \"senderId\": 1,\n    \"senderName\": \"Sistem Yoneticisi\",\n    \"offeredProductId\": null,\n    \"offeredProductTitle\": null,\n    \"cashAmount\": 450,\n    \"message\": \"Nakit odeme ile ayni gun teslim alabilirim.\",\n    \"status\": \"Pending\",\n    \"createdAt\": \"2026-05-13T12:10:00Z\"\n  }\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Bu ürün için zaten bekleyen bir teklifiniz var.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Offers | Get Incoming",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/offers/incoming",
+            "description": "Method: GET\nURL: {{base_url}}/api/offers/incoming\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Gelen teklifler getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"productId\": 1,\n      \"productTitle\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n      \"productOwnerId\": 2,\n      \"productOwnerName\": \"Ornek Ogrenci\",\n      \"senderId\": 1,\n      \"senderName\": \"Sistem Yoneticisi\",\n      \"offeredProductId\": null,\n      \"offeredProductTitle\": null,\n      \"cashAmount\": 450,\n      \"message\": \"Nakit odeme ile ayni gun teslim alabilirim.\",\n      \"status\": \"Pending\",\n      \"createdAt\": \"2026-05-13T12:10:00Z\"\n    }\n  ],\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Bu işlem için giriş yapmanız gerekiyor.\",\n  \"data\": null,\n  \"errors\": []}"
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Gelen teklifler getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"productId\": 1,\n      \"productTitle\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n      \"productOwnerId\": 2,\n      \"productOwnerName\": \"Ornek Ogrenci\",\n      \"senderId\": 1,\n      \"senderName\": \"Sistem Yoneticisi\",\n      \"offeredProductId\": null,\n      \"offeredProductTitle\": null,\n      \"cashAmount\": 450,\n      \"message\": \"Nakit odeme ile ayni gun teslim alabilirim.\",\n      \"status\": \"Pending\",\n      \"createdAt\": \"2026-05-13T12:10:00Z\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Bu işlem için giriş yapmanız gerekiyor.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Offers | Get Outgoing",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/offers/outgoing",
+            "description": "Method: GET\nURL: {{base_url}}/api/offers/outgoing\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Giden teklifler getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"productId\": 1,\n      \"productTitle\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n      \"productOwnerId\": 2,\n      \"productOwnerName\": \"Ornek Ogrenci\",\n      \"senderId\": 1,\n      \"senderName\": \"Sistem Yoneticisi\",\n      \"offeredProductId\": null,\n      \"offeredProductTitle\": null,\n      \"cashAmount\": 450,\n      \"message\": \"Nakit odeme ile ayni gun teslim alabilirim.\",\n      \"status\": \"Pending\",\n      \"createdAt\": \"2026-05-13T12:10:00Z\"\n    }\n  ],\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Bu işlem için giriş yapmanız gerekiyor.\",\n  \"data\": null,\n  \"errors\": []}"
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Giden teklifler getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"productId\": 1,\n      \"productTitle\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n      \"productOwnerId\": 2,\n      \"productOwnerName\": \"Ornek Ogrenci\",\n      \"senderId\": 1,\n      \"senderName\": \"Sistem Yoneticisi\",\n      \"offeredProductId\": null,\n      \"offeredProductTitle\": null,\n      \"cashAmount\": 450,\n      \"message\": \"Nakit odeme ile ayni gun teslim alabilirim.\",\n      \"status\": \"Pending\",\n      \"createdAt\": \"2026-05-13T12:10:00Z\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Bu işlem için giriş yapmanız gerekiyor.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Offers | Accept",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/offers/{{offerId}}/accept",
+            "description": "Method: POST\nURL: {{base_url}}/api/offers/{{offerId}}/accept\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Teklif kabul edildi.\",\n  \"data\": {\n    \"id\": 1,\n    \"productId\": 1,\n    \"productTitle\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n    \"productOwnerId\": 2,\n    \"productOwnerName\": \"Ornek Ogrenci\",\n    \"senderId\": 1,\n    \"senderName\": \"Sistem Yoneticisi\",\n    \"offeredProductId\": null,\n    \"offeredProductTitle\": null,\n    \"cashAmount\": 450,\n    \"message\": \"Nakit odeme ile ayni gun teslim alabilirim.\",\n    \"status\": \"Accepted\",\n    \"createdAt\": \"2026-05-13T12:10:00Z\"\n  },\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Sadece kendi ürününüze gelen teklifi kabul edebilirsiniz.\",\n  \"data\": null,\n  \"errors\": []}"
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Teklif kabul edildi.\",\n  \"data\": {\n    \"id\": 1,\n    \"productId\": 1,\n    \"productTitle\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n    \"productOwnerId\": 2,\n    \"productOwnerName\": \"Ornek Ogrenci\",\n    \"senderId\": 1,\n    \"senderName\": \"Sistem Yoneticisi\",\n    \"offeredProductId\": null,\n    \"offeredProductTitle\": null,\n    \"cashAmount\": 450,\n    \"message\": \"Nakit odeme ile ayni gun teslim alabilirim.\",\n    \"status\": \"Accepted\",\n    \"createdAt\": \"2026-05-13T12:10:00Z\"\n  }\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Sadece kendi ürününüze gelen teklifi kabul edebilirsiniz.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Offers | Reject",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/offers/{{offerId}}/reject",
+            "description": "Method: POST\nURL: {{base_url}}/api/offers/{{offerId}}/reject\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Teklif reddedildi.\",\n  \"data\": {\n    \"id\": 1,\n    \"productId\": 1,\n    \"productTitle\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n    \"productOwnerId\": 2,\n    \"productOwnerName\": \"Ornek Ogrenci\",\n    \"senderId\": 1,\n    \"senderName\": \"Sistem Yoneticisi\",\n    \"offeredProductId\": null,\n    \"offeredProductTitle\": null,\n    \"cashAmount\": 450,\n    \"message\": \"Nakit odeme ile ayni gun teslim alabilirim.\",\n    \"status\": \"Rejected\",\n    \"createdAt\": \"2026-05-13T12:10:00Z\"\n  },\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Sadece bekleyen teklifler reddedilebilir.\",\n  \"data\": null,\n  \"errors\": []}"
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Teklif reddedildi.\",\n  \"data\": {\n    \"id\": 1,\n    \"productId\": 1,\n    \"productTitle\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n    \"productOwnerId\": 2,\n    \"productOwnerName\": \"Ornek Ogrenci\",\n    \"senderId\": 1,\n    \"senderName\": \"Sistem Yoneticisi\",\n    \"offeredProductId\": null,\n    \"offeredProductTitle\": null,\n    \"cashAmount\": 450,\n    \"message\": \"Nakit odeme ile ayni gun teslim alabilirim.\",\n    \"status\": \"Rejected\",\n    \"createdAt\": \"2026-05-13T12:10:00Z\"\n  }\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Sadece bekleyen teklifler reddedilebilir.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Offers | Cancel",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/offers/{{offerId}}/cancel",
+            "description": "Method: POST\nURL: {{base_url}}/api/offers/{{offerId}}/cancel\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Teklif iptal edildi.\",\n  \"data\": {\n    \"id\": 1,\n    \"productId\": 1,\n    \"productTitle\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n    \"productOwnerId\": 2,\n    \"productOwnerName\": \"Ornek Ogrenci\",\n    \"senderId\": 1,\n    \"senderName\": \"Sistem Yoneticisi\",\n    \"offeredProductId\": null,\n    \"offeredProductTitle\": null,\n    \"cashAmount\": 450,\n    \"message\": \"Nakit odeme ile ayni gun teslim alabilirim.\",\n    \"status\": \"Cancelled\",\n    \"createdAt\": \"2026-05-13T12:10:00Z\"\n  },\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Sadece kendi gönderdiğiniz teklifi iptal edebilirsiniz.\",\n  \"data\": null,\n  \"errors\": []}"
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Teklif iptal edildi.\",\n  \"data\": {\n    \"id\": 1,\n    \"productId\": 1,\n    \"productTitle\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n    \"productOwnerId\": 2,\n    \"productOwnerName\": \"Ornek Ogrenci\",\n    \"senderId\": 1,\n    \"senderName\": \"Sistem Yoneticisi\",\n    \"offeredProductId\": null,\n    \"offeredProductTitle\": null,\n    \"cashAmount\": 450,\n    \"message\": \"Nakit odeme ile ayni gun teslim alabilirim.\",\n    \"status\": \"Cancelled\",\n    \"createdAt\": \"2026-05-13T12:10:00Z\"\n  }\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Sadece kendi gönderdiğiniz teklifi iptal edebilirsiniz.\",\n  \"errors\": []\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Swaps",
+      "description": "Dedicated Swaps endpointi yok. Takas sureci su an Offers accept/reject/cancel akisiyla temsil ediliyor. DeliveryVerification entitysi mevcut ama public API olarak acilmamis.",
+      "item": []
+    },
+    {
+      "name": "Messages / Notifications",
+      "description": "Mesaj, bildirim ve kullanicinin admin iletisim endpointleri.",
+      "item": [
+        {
+          "name": "Messages | Send",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/messages",
+            "description": "Method: POST\nURL: {{base_url}}/api/messages\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nRequest body example:\n{\n  \"receiverId\": {{userId}},\n  \"productId\": {{productId}},\n  \"content\": \"Merhaba, urunle ilgileniyorum. Hala uygun mu?\"\n}\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Mesaj gönderildi.\",\n  \"data\": {\n    \"id\": 1,\n    \"senderId\": 2,\n    \"senderName\": \"Ornek Ogrenci\",\n    \"receiverId\": 1,\n    \"receiverName\": \"Sistem Yoneticisi\",\n    \"productId\": 1,\n    \"content\": \"Merhaba, urunle ilgileniyorum. Hala uygun mu?\",\n    \"isRead\": false,\n    \"createdAt\": \"2026-05-13T12:15:00Z\"\n  },\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Kendinize mesaj gönderemezsiniz.\",\n  \"data\": null,\n  \"errors\": []}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiverId\": {{userId}},\n  \"productId\": {{productId}},\n  \"content\": \"Merhaba, urunle ilgileniyorum. Hala uygun mu?\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Mesaj gönderildi.\",\n  \"data\": {\n    \"id\": 1,\n    \"senderId\": 2,\n    \"senderName\": \"Ornek Ogrenci\",\n    \"receiverId\": 1,\n    \"receiverName\": \"Sistem Yoneticisi\",\n    \"productId\": 1,\n    \"content\": \"Merhaba, urunle ilgileniyorum. Hala uygun mu?\",\n    \"isRead\": false,\n    \"createdAt\": \"2026-05-13T12:15:00Z\"\n  }\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Kendinize mesaj gönderemezsiniz.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Messages | Get Conversation",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/messages/conversation/{{userId}}",
+            "description": "Method: GET\nURL: {{base_url}}/api/messages/conversation/{{userId}}\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Mesajlaşma geçmişi getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"senderId\": 2,\n      \"senderName\": \"Ornek Ogrenci\",\n      \"receiverId\": 1,\n      \"receiverName\": \"Sistem Yoneticisi\",\n      \"productId\": 1,\n      \"content\": \"Merhaba, urunle ilgileniyorum. Hala uygun mu?\",\n      \"isRead\": false,\n      \"createdAt\": \"2026-05-13T12:15:00Z\"\n    }\n  ],\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Görüşme yapılacak kullanıcı bulunamadı.\",\n  \"data\": null,\n  \"errors\": []}"
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Mesajlaşma geçmişi getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"senderId\": 2,\n      \"senderName\": \"Ornek Ogrenci\",\n      \"receiverId\": 1,\n      \"receiverName\": \"Sistem Yoneticisi\",\n      \"productId\": 1,\n      \"content\": \"Merhaba, urunle ilgileniyorum. Hala uygun mu?\",\n      \"isRead\": false,\n      \"createdAt\": \"2026-05-13T12:15:00Z\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Görüşme yapılacak kullanıcı bulunamadı.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Messages | Get Unread Count",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/messages/unread-count",
+            "description": "Method: GET\nURL: {{base_url}}/api/messages/unread-count\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Okunmamış mesaj sayısı getirildi.\",\n  \"data\": {\n    \"count\": 1\n  },\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Bu işlem için giriş yapmanız gerekiyor.\",\n  \"data\": null,\n  \"errors\": []}"
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Okunmamış mesaj sayısı getirildi.\",\n  \"data\": {\n    \"count\": 1\n  }\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Bu işlem için giriş yapmanız gerekiyor.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Notifications | Get All",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/notifications",
+            "description": "Method: GET\nURL: {{base_url}}/api/notifications\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Bildirimler getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"title\": \"Yeni mesaj\",\n      \"message\": \"Ornek Ogrenci size yeni bir mesaj gonderdi.\",\n      \"isRead\": false,\n      \"createdAt\": \"2026-05-13T12:16:00Z\"\n    }\n  ],\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Bu işlem için giriş yapmanız gerekiyor.\",\n  \"data\": null,\n  \"errors\": []}"
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Bildirimler getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"title\": \"Yeni mesaj\",\n      \"message\": \"Ornek Ogrenci size yeni bir mesaj gonderdi.\",\n      \"isRead\": false,\n      \"createdAt\": \"2026-05-13T12:16:00Z\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Bu işlem için giriş yapmanız gerekiyor.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Notifications | Get Unread Count",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/notifications/unread-count",
+            "description": "Method: GET\nURL: {{base_url}}/api/notifications/unread-count\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Okunmamış bildirim sayısı getirildi.\",\n  \"data\": {\n    \"count\": 1\n  },\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Bu işlem için giriş yapmanız gerekiyor.\",\n  \"data\": null,\n  \"errors\": []}"
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Okunmamış bildirim sayısı getirildi.\",\n  \"data\": {\n    \"count\": 1\n  }\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Bu işlem için giriş yapmanız gerekiyor.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Notifications | Mark As Read",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/notifications/{{notificationId}}/read",
+            "description": "Method: POST\nURL: {{base_url}}/api/notifications/{{notificationId}}/read\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Bildirim okundu olarak işaretlendi.\",\n  \"data\": {\n    \"id\": 1,\n    \"title\": \"Yeni mesaj\",\n    \"message\": \"Ornek Ogrenci size yeni bir mesaj gonderdi.\",\n    \"isRead\": true,\n    \"createdAt\": \"2026-05-13T12:16:00Z\"\n  },\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Bildirim bulunamadı.\",\n  \"data\": null,\n  \"errors\": []}"
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Bildirim okundu olarak işaretlendi.\",\n  \"data\": {\n    \"id\": 1,\n    \"title\": \"Yeni mesaj\",\n    \"message\": \"Ornek Ogrenci size yeni bir mesaj gonderdi.\",\n    \"isRead\": true,\n    \"createdAt\": \"2026-05-13T12:16:00Z\"\n  }\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Bildirim bulunamadı.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Contact | Send Message To Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/contact/messages",
+            "description": "Method: POST\nURL: {{base_url}}/api/contact/messages\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nRequest body example:\n{\n  \"subject\": \"Hesap dogrulama yardimi\",\n  \"message\": \"Giris sonrasinda hesabimi dogrulayamiyorum, kontrol eder misiniz?\"\n}\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Mesajiniz admin ekibine iletildi.\",\n  \"data\": {\n    \"id\": 1,\n    \"userId\": 2,\n    \"userFullName\": \"Ornek Ogrenci\",\n    \"userEmail\": \"ogrenci@takas.local\",\n    \"subject\": \"Hesap dogrulama yardimi\",\n    \"message\": \"Giris sonrasinda hesabimi dogrulayamiyorum, kontrol eder misiniz?\",\n    \"status\": \"New\",\n    \"adminReply\": null,\n    \"createdAt\": \"2026-05-13T12:25:00Z\",\n    \"repliedAt\": null\n  },\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Mesaj konusu ve icerigi bos birakilamaz.\",\n  \"data\": null,\n  \"errors\": []}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subject\": \"Hesap dogrulama yardimi\",\n  \"message\": \"Giris sonrasinda hesabimi dogrulayamiyorum, kontrol eder misiniz?\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Mesajiniz admin ekibine iletildi.\",\n  \"data\": {\n    \"id\": 1,\n    \"userId\": 2,\n    \"userFullName\": \"Ornek Ogrenci\",\n    \"userEmail\": \"ogrenci@takas.local\",\n    \"subject\": \"Hesap dogrulama yardimi\",\n    \"message\": \"Giris sonrasinda hesabimi dogrulayamiyorum, kontrol eder misiniz?\",\n    \"status\": \"New\",\n    \"adminReply\": null,\n    \"createdAt\": \"2026-05-13T12:25:00Z\",\n    \"repliedAt\": null\n  }\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Mesaj konusu ve icerigi bos birakilamaz.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Contact | Get My Messages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/contact/messages/my",
+            "description": "Method: GET\nURL: {{base_url}}/api/contact/messages/my\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Kullanici iletisim mesajlari getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"userId\": 2,\n      \"userFullName\": \"Ornek Ogrenci\",\n      \"userEmail\": \"ogrenci@takas.local\",\n      \"subject\": \"Hesap dogrulama yardimi\",\n      \"message\": \"Giris sonrasinda hesabimi dogrulayamiyorum, kontrol eder misiniz?\",\n      \"status\": \"New\",\n      \"adminReply\": null,\n      \"createdAt\": \"2026-05-13T12:25:00Z\",\n      \"repliedAt\": null\n    }\n  ],\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Bu işlem için giriş yapmanız gerekiyor.\",\n  \"data\": null,\n  \"errors\": []}"
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Kullanici iletisim mesajlari getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"userId\": 2,\n      \"userFullName\": \"Ornek Ogrenci\",\n      \"userEmail\": \"ogrenci@takas.local\",\n      \"subject\": \"Hesap dogrulama yardimi\",\n      \"message\": \"Giris sonrasinda hesabimi dogrulayamiyorum, kontrol eder misiniz?\",\n      \"status\": \"New\",\n      \"adminReply\": null,\n      \"createdAt\": \"2026-05-13T12:25:00Z\",\n      \"repliedAt\": null\n    }\n  ]\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Bu işlem için giriş yapmanız gerekiyor.\",\n  \"errors\": []\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Reports / Complaints",
+      "description": "Sikayet/complaint endpointleri.",
+      "item": [
+        {
+          "name": "Reports | Create Complaint",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/reports",
+            "description": "Method: POST\nURL: {{base_url}}/api/reports\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nRequest body example:\n{\n  \"reportedUserId\": {{userId}},\n  \"productId\": {{productId}},\n  \"reason\": \"Urun aciklamasi gercegi yansitmiyor olabilir.\"\n}\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Şikayet kaydı oluşturuldu.\",\n  \"data\": {\n    \"id\": 1,\n    \"reporterId\": 1,\n    \"reporterName\": \"Sistem Yoneticisi\",\n    \"reportedUserId\": 2,\n    \"reportedUserName\": \"Ornek Ogrenci\",\n    \"productId\": 1,\n    \"productTitle\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n    \"reason\": \"Urun aciklamasi gercegi yansitmiyor olabilir.\",\n    \"status\": \"Pending\",\n    \"createdAt\": \"2026-05-13T12:20:00Z\"\n  },\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Şikayet için kullanıcı veya ürün bilgisi vermelisiniz.\",\n  \"data\": null,\n  \"errors\": []}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reportedUserId\": {{userId}},\n  \"productId\": {{productId}},\n  \"reason\": \"Urun aciklamasi gercegi yansitmiyor olabilir.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Şikayet kaydı oluşturuldu.\",\n  \"data\": {\n    \"id\": 1,\n    \"reporterId\": 1,\n    \"reporterName\": \"Sistem Yoneticisi\",\n    \"reportedUserId\": 2,\n    \"reportedUserName\": \"Ornek Ogrenci\",\n    \"productId\": 1,\n    \"productTitle\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n    \"reason\": \"Urun aciklamasi gercegi yansitmiyor olabilir.\",\n    \"status\": \"Pending\",\n    \"createdAt\": \"2026-05-13T12:20:00Z\"\n  }\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Şikayet için kullanıcı veya ürün bilgisi vermelisiniz.\",\n  \"errors\": []\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "description": "Admin rolune acik tum endpointler.",
+      "item": [
+        {
+          "name": "Admin | Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/admin/dashboard",
+            "description": "Method: GET\nURL: {{base_url}}/api/admin/dashboard\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Yönetim paneli özeti getirildi.\",\n  \"data\": {\n    \"totalUsers\": 2,\n    \"totalProducts\": 1,\n    \"totalOffers\": 1,\n    \"pendingReports\": 1,\n    \"totalNotifications\": 3\n  },\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Bu işlem için yetkiniz bulunmuyor.\",\n  \"data\": null,\n  \"errors\": []}\n\nNote: Admin rolune sahip kullanicinin JWT token degeri gerekir."
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Yönetim paneli özeti getirildi.\",\n  \"data\": {\n    \"totalUsers\": 2,\n    \"totalProducts\": 1,\n    \"totalOffers\": 1,\n    \"pendingReports\": 1,\n    \"totalNotifications\": 3\n  }\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Bu işlem için yetkiniz bulunmuyor.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Admin | Get Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/admin/users",
+            "description": "Method: GET\nURL: {{base_url}}/api/admin/users\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Kullanıcılar getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"fullName\": \"Sistem Yoneticisi\",\n      \"email\": \"admin@takas.local\",\n      \"phone\": null,\n      \"department\": null,\n      \"campus\": null,\n      \"bio\": null,\n      \"avatarUrl\": null,\n      \"role\": \"Admin\",\n      \"rating\": 5,\n      \"successfulSwaps\": 12,\n      \"createdAt\": \"2026-05-12T09:30:00Z\"\n    },\n    {\n      \"id\": 2,\n      \"fullName\": \"Ornek Ogrenci\",\n      \"email\": \"ogrenci@takas.local\",\n      \"phone\": null,\n      \"department\": \"Bilgisayar Muhendisligi\",\n      \"campus\": \"Merkez Kampus\",\n      \"bio\": \"Ihtiyac fazlasi urunlerini takas eden ogrenci.\",\n      \"avatarUrl\": null,\n      \"role\": \"User\",\n      \"rating\": 4.5,\n      \"successfulSwaps\": 3,\n      \"createdAt\": \"2026-05-13T11:30:00Z\"\n    }\n  ],\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Bu işlem için yetkiniz bulunmuyor.\",\n  \"data\": null,\n  \"errors\": []}"
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Kullanıcılar getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"fullName\": \"Sistem Yoneticisi\",\n      \"email\": \"admin@takas.local\",\n      \"phone\": null,\n      \"department\": null,\n      \"campus\": null,\n      \"bio\": null,\n      \"avatarUrl\": null,\n      \"role\": \"Admin\",\n      \"rating\": 5,\n      \"successfulSwaps\": 12,\n      \"createdAt\": \"2026-05-12T09:30:00Z\"\n    },\n    {\n      \"id\": 2,\n      \"fullName\": \"Ornek Ogrenci\",\n      \"email\": \"ogrenci@takas.local\",\n      \"phone\": null,\n      \"department\": \"Bilgisayar Muhendisligi\",\n      \"campus\": \"Merkez Kampus\",\n      \"bio\": \"Ihtiyac fazlasi urunlerini takas eden ogrenci.\",\n      \"avatarUrl\": null,\n      \"role\": \"User\",\n      \"rating\": 4.5,\n      \"successfulSwaps\": 3,\n      \"createdAt\": \"2026-05-13T11:30:00Z\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Bu işlem için yetkiniz bulunmuyor.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Admin | Get User By Id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/admin/users/{{userId}}",
+            "description": "Method: GET\nURL: {{base_url}}/api/admin/users/{{userId}}\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Kullanıcı detayı getirildi.\",\n  \"data\": {\n    \"id\": 2,\n    \"fullName\": \"Ornek Ogrenci\",\n    \"email\": \"ogrenci@takas.local\",\n    \"phone\": null,\n    \"department\": \"Bilgisayar Muhendisligi\",\n    \"campus\": \"Merkez Kampus\",\n    \"bio\": \"Ihtiyac fazlasi urunlerini takas eden ogrenci.\",\n    \"avatarUrl\": null,\n    \"role\": \"User\",\n    \"rating\": 4.5,\n    \"successfulSwaps\": 3,\n    \"createdAt\": \"2026-05-13T11:30:00Z\"\n  },\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Kullanıcı bulunamadı.\",\n  \"data\": null,\n  \"errors\": []}"
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Kullanıcı detayı getirildi.\",\n  \"data\": {\n    \"id\": 2,\n    \"fullName\": \"Ornek Ogrenci\",\n    \"email\": \"ogrenci@takas.local\",\n    \"phone\": null,\n    \"department\": \"Bilgisayar Muhendisligi\",\n    \"campus\": \"Merkez Kampus\",\n    \"bio\": \"Ihtiyac fazlasi urunlerini takas eden ogrenci.\",\n    \"avatarUrl\": null,\n    \"role\": \"User\",\n    \"rating\": 4.5,\n    \"successfulSwaps\": 3,\n    \"createdAt\": \"2026-05-13T11:30:00Z\"\n  }\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Kullanıcı bulunamadı.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Admin | Get Products",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/admin/products",
+            "description": "Method: GET\nURL: {{base_url}}/api/admin/products\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Tüm ürünler getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"ownerId\": 2,\n      \"ownerName\": \"Ornek Ogrenci\",\n      \"ownerAvatarUrl\": null,\n      \"ownerRating\": 4.5,\n      \"categoryId\": 1,\n      \"categoryName\": \"Kitap\",\n      \"title\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n      \"description\": \"Az kullanilmis, notsuz ve temiz durumda.\",\n      \"condition\": \"Cok Iyi\",\n      \"estimatedMinPrice\": 350,\n      \"estimatedMaxPrice\": 500,\n      \"campus\": \"Merkez Kampus\",\n      \"status\": \"Available\",\n      \"viewCount\": 14,\n      \"createdAt\": \"2026-05-13T10:45:00Z\",\n      \"isFavorited\": false,\n      \"images\": [\n        {\n          \"id\": 1,\n          \"imageUrl\": \"https://picsum.photos/id/101/800/600\",\n          \"isMain\": true\n        },\n        {\n          \"id\": 2,\n          \"imageUrl\": \"https://picsum.photos/id/102/800/600\",\n          \"isMain\": false\n        }\n      ]\n    }\n  ],\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Bu işlem için yetkiniz bulunmuyor.\",\n  \"data\": null,\n  \"errors\": []}"
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Tüm ürünler getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"ownerId\": 2,\n      \"ownerName\": \"Ornek Ogrenci\",\n      \"ownerAvatarUrl\": null,\n      \"ownerRating\": 4.5,\n      \"categoryId\": 1,\n      \"categoryName\": \"Kitap\",\n      \"title\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n      \"description\": \"Az kullanilmis, notsuz ve temiz durumda.\",\n      \"condition\": \"Cok Iyi\",\n      \"estimatedMinPrice\": 350,\n      \"estimatedMaxPrice\": 500,\n      \"campus\": \"Merkez Kampus\",\n      \"status\": \"Available\",\n      \"viewCount\": 14,\n      \"createdAt\": \"2026-05-13T10:45:00Z\",\n      \"isFavorited\": false,\n      \"images\": [\n        {\n          \"id\": 1,\n          \"imageUrl\": \"https://picsum.photos/id/101/800/600\",\n          \"isMain\": true\n        },\n        {\n          \"id\": 2,\n          \"imageUrl\": \"https://picsum.photos/id/102/800/600\",\n          \"isMain\": false\n        }\n      ]\n    }\n  ]\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Bu işlem için yetkiniz bulunmuyor.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Admin | Get Offers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/admin/offers",
+            "description": "Method: GET\nURL: {{base_url}}/api/admin/offers\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Tüm teklifler getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"productId\": 1,\n      \"productTitle\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n      \"productOwnerId\": 2,\n      \"productOwnerName\": \"Ornek Ogrenci\",\n      \"senderId\": 1,\n      \"senderName\": \"Sistem Yoneticisi\",\n      \"offeredProductId\": null,\n      \"offeredProductTitle\": null,\n      \"cashAmount\": 450,\n      \"message\": \"Nakit odeme ile ayni gun teslim alabilirim.\",\n      \"status\": \"Pending\",\n      \"createdAt\": \"2026-05-13T12:10:00Z\"\n    }\n  ],\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Bu işlem için yetkiniz bulunmuyor.\",\n  \"data\": null,\n  \"errors\": []}"
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Tüm teklifler getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"productId\": 1,\n      \"productTitle\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n      \"productOwnerId\": 2,\n      \"productOwnerName\": \"Ornek Ogrenci\",\n      \"senderId\": 1,\n      \"senderName\": \"Sistem Yoneticisi\",\n      \"offeredProductId\": null,\n      \"offeredProductTitle\": null,\n      \"cashAmount\": 450,\n      \"message\": \"Nakit odeme ile ayni gun teslim alabilirim.\",\n      \"status\": \"Pending\",\n      \"createdAt\": \"2026-05-13T12:10:00Z\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Bu işlem için yetkiniz bulunmuyor.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Admin | Get Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/admin/notifications",
+            "description": "Method: GET\nURL: {{base_url}}/api/admin/notifications\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Tüm bildirimler getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"title\": \"Yeni mesaj\",\n      \"message\": \"Ornek Ogrenci size yeni bir mesaj gonderdi.\",\n      \"isRead\": false,\n      \"createdAt\": \"2026-05-13T12:16:00Z\"\n    }\n  ],\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Bu işlem için yetkiniz bulunmuyor.\",\n  \"data\": null,\n  \"errors\": []}"
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Tüm bildirimler getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"title\": \"Yeni mesaj\",\n      \"message\": \"Ornek Ogrenci size yeni bir mesaj gonderdi.\",\n      \"isRead\": false,\n      \"createdAt\": \"2026-05-13T12:16:00Z\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Bu işlem için yetkiniz bulunmuyor.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Admin | Get Reports",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/admin/reports",
+            "description": "Method: GET\nURL: {{base_url}}/api/admin/reports\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Şikayet kayıtları getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"reporterId\": 1,\n      \"reporterName\": \"Sistem Yoneticisi\",\n      \"reportedUserId\": 2,\n      \"reportedUserName\": \"Ornek Ogrenci\",\n      \"productId\": 1,\n      \"productTitle\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n      \"reason\": \"Urun aciklamasi gercegi yansitmiyor olabilir.\",\n      \"status\": \"Pending\",\n      \"createdAt\": \"2026-05-13T12:20:00Z\"\n    }\n  ],\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Bu işlem için yetkiniz bulunmuyor.\",\n  \"data\": null,\n  \"errors\": []}"
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Şikayet kayıtları getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"reporterId\": 1,\n      \"reporterName\": \"Sistem Yoneticisi\",\n      \"reportedUserId\": 2,\n      \"reportedUserName\": \"Ornek Ogrenci\",\n      \"productId\": 1,\n      \"productTitle\": \"Temiz Kullanilmis Muhendislik Kitabi\",\n      \"reason\": \"Urun aciklamasi gercegi yansitmiyor olabilir.\",\n      \"status\": \"Pending\",\n      \"createdAt\": \"2026-05-13T12:20:00Z\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Bu işlem için yetkiniz bulunmuyor.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Admin Contact | Get All Messages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/admin/contact-messages",
+            "description": "Method: GET\nURL: {{base_url}}/api/admin/contact-messages\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Iletisim mesajlari getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"userId\": 2,\n      \"userFullName\": \"Ornek Ogrenci\",\n      \"userEmail\": \"ogrenci@takas.local\",\n      \"subject\": \"Hesap dogrulama yardimi\",\n      \"message\": \"Giris sonrasinda hesabimi dogrulayamiyorum, kontrol eder misiniz?\",\n      \"status\": \"New\",\n      \"adminReply\": null,\n      \"createdAt\": \"2026-05-13T12:25:00Z\",\n      \"repliedAt\": null\n    }\n  ],\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Bu işlem için yetkiniz bulunmuyor.\",\n  \"data\": null,\n  \"errors\": []}"
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Iletisim mesajlari getirildi.\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"userId\": 2,\n      \"userFullName\": \"Ornek Ogrenci\",\n      \"userEmail\": \"ogrenci@takas.local\",\n      \"subject\": \"Hesap dogrulama yardimi\",\n      \"message\": \"Giris sonrasinda hesabimi dogrulayamiyorum, kontrol eder misiniz?\",\n      \"status\": \"New\",\n      \"adminReply\": null,\n      \"createdAt\": \"2026-05-13T12:25:00Z\",\n      \"repliedAt\": null\n    }\n  ]\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Bu işlem için yetkiniz bulunmuyor.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Admin Contact | Get Message By Id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/admin/contact-messages/{{contactMessageId}}",
+            "description": "Method: GET\nURL: {{base_url}}/api/admin/contact-messages/{{contactMessageId}}\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Iletisim mesaji detayi getirildi.\",\n  \"data\": {\n    \"id\": 1,\n    \"userId\": 2,\n    \"userFullName\": \"Ornek Ogrenci\",\n    \"userEmail\": \"ogrenci@takas.local\",\n    \"subject\": \"Hesap dogrulama yardimi\",\n    \"message\": \"Giris sonrasinda hesabimi dogrulayamiyorum, kontrol eder misiniz?\",\n    \"status\": \"New\",\n    \"adminReply\": null,\n    \"createdAt\": \"2026-05-13T12:25:00Z\",\n    \"repliedAt\": null\n  },\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Iletisim mesaji bulunamadi.\",\n  \"data\": null,\n  \"errors\": []}"
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Iletisim mesaji detayi getirildi.\",\n  \"data\": {\n    \"id\": 1,\n    \"userId\": 2,\n    \"userFullName\": \"Ornek Ogrenci\",\n    \"userEmail\": \"ogrenci@takas.local\",\n    \"subject\": \"Hesap dogrulama yardimi\",\n    \"message\": \"Giris sonrasinda hesabimi dogrulayamiyorum, kontrol eder misiniz?\",\n    \"status\": \"New\",\n    \"adminReply\": null,\n    \"createdAt\": \"2026-05-13T12:25:00Z\",\n    \"repliedAt\": null\n  }\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Iletisim mesaji bulunamadi.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Admin Contact | Reply To Message",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/admin/contact-messages/{{contactMessageId}}/reply",
+            "description": "Method: PUT\nURL: {{base_url}}/api/admin/contact-messages/{{contactMessageId}}/reply\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nRequest body example:\n{\n  \"adminReply\": \"Kaydiniz kontrol edildi, cikis-giris yapip tekrar deneyebilirsiniz.\"\n}\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Iletisim mesajina yanit verildi.\",\n  \"data\": {\n    \"id\": 1,\n    \"userId\": 2,\n    \"userFullName\": \"Ornek Ogrenci\",\n    \"userEmail\": \"ogrenci@takas.local\",\n    \"subject\": \"Hesap dogrulama yardimi\",\n    \"message\": \"Giris sonrasinda hesabimi dogrulayamiyorum, kontrol eder misiniz?\",\n    \"status\": \"Replied\",\n    \"adminReply\": \"Kaydiniz kontrol edildi, cikis-giris yapip tekrar deneyebilirsiniz.\",\n    \"createdAt\": \"2026-05-13T12:25:00Z\",\n    \"repliedAt\": \"2026-05-13T12:40:00Z\"\n  },\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Admin yaniti bos birakilamaz.\",\n  \"data\": null,\n  \"errors\": []}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"adminReply\": \"Kaydiniz kontrol edildi, cikis-giris yapip tekrar deneyebilirsiniz.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Iletisim mesajina yanit verildi.\",\n  \"data\": {\n    \"id\": 1,\n    \"userId\": 2,\n    \"userFullName\": \"Ornek Ogrenci\",\n    \"userEmail\": \"ogrenci@takas.local\",\n    \"subject\": \"Hesap dogrulama yardimi\",\n    \"message\": \"Giris sonrasinda hesabimi dogrulayamiyorum, kontrol eder misiniz?\",\n    \"status\": \"Replied\",\n    \"adminReply\": \"Kaydiniz kontrol edildi, cikis-giris yapip tekrar deneyebilirsiniz.\",\n    \"createdAt\": \"2026-05-13T12:25:00Z\",\n    \"repliedAt\": \"2026-05-13T12:40:00Z\"\n  }\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Admin yaniti bos birakilamaz.\",\n  \"errors\": []\n}"
+            }
+          ]
+        },
+        {
+          "name": "Admin Contact | Update Message Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/api/admin/contact-messages/{{contactMessageId}}/status",
+            "description": "Method: PUT\nURL: {{base_url}}/api/admin/contact-messages/{{contactMessageId}}/status\nAuthorization: Bearer {{access_token}}\nQuery params: None\n\nRequest body example:\n{\n  \"status\": \"Closed\"\n}\n\nSuccessful response example:\n{\n  \"success\": true,\n  \"message\": \"Iletisim mesaji durumu guncellendi.\",\n  \"data\": {\n    \"id\": 1,\n    \"userId\": 2,\n    \"userFullName\": \"Ornek Ogrenci\",\n    \"userEmail\": \"ogrenci@takas.local\",\n    \"subject\": \"Hesap dogrulama yardimi\",\n    \"message\": \"Giris sonrasinda hesabimi dogrulayamiyorum, kontrol eder misiniz?\",\n    \"status\": \"Closed\",\n    \"adminReply\": \"Kaydiniz kontrol edildi, cikis-giris yapip tekrar deneyebilirsiniz.\",\n    \"createdAt\": \"2026-05-13T12:25:00Z\",\n    \"repliedAt\": \"2026-05-13T12:40:00Z\"\n  },\n  \"errors\": []}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"Admin yaniti olmadan mesaj durumu Replied yapilamaz.\",\n  \"data\": null,\n  \"errors\": []}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Closed\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Iletisim mesaji durumu guncellendi.\",\n  \"data\": {\n    \"id\": 1,\n    \"userId\": 2,\n    \"userFullName\": \"Ornek Ogrenci\",\n    \"userEmail\": \"ogrenci@takas.local\",\n    \"subject\": \"Hesap dogrulama yardimi\",\n    \"message\": \"Giris sonrasinda hesabimi dogrulayamiyorum, kontrol eder misiniz?\",\n    \"status\": \"Closed\",\n    \"adminReply\": \"Kaydiniz kontrol edildi, cikis-giris yapip tekrar deneyebilirsiniz.\",\n    \"createdAt\": \"2026-05-13T12:25:00Z\",\n    \"repliedAt\": \"2026-05-13T12:40:00Z\"\n  }\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Admin yaniti olmadan mesaj durumu Replied yapilamaz.\",\n  \"errors\": []\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Health / Test",
+      "description": "Dedicated health endpoint yok. Swagger JSON smoke test requestleri kullanilabilir.",
+      "item": [
+        {
+          "name": "Health | Swagger JSON Smoke Test",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{base_url}}/swagger/v1/swagger.json",
+            "description": "Method: GET\nURL: {{base_url}}/swagger/v1/swagger.json\nAuthorization: No auth required\nQuery params: None\n\nSuccessful response example:\n{\n  \"openapi\": \"3.0.1\",\n  \"info\": {\n    \"title\": \"Takas API\",\n    \"version\": \"v1\",\n    \"description\": \"Kampus ici ogrenci takas uygulamasi icin REST API\"\n  },\n  \"paths\": {\n    \"/api/products\": {},\n    \"/api/offers\": {},\n    \"/api/messages\": {},\n    \"/api/admin/dashboard\": {}\n  }\n}\n\nError response example:\n{\n  \"success\": false,\n  \"message\": \"İstenen kaynak bulunamadı.\",\n  \"data\": null,\n  \"errors\": []}\n\nNote: API ayakta mi diye hizli smoke test icin kullanilabilir."
+          },
+          "response": [
+            {
+              "name": "Success Example",
+              "originalRequest": {},
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"openapi\": \"3.0.1\",\n  \"info\": {\n    \"title\": \"Takas API\",\n    \"version\": \"v1\",\n    \"description\": \"Kampus ici ogrenci takas uygulamasi icin REST API\"\n  },\n  \"paths\": {\n    \"/api/products\": {},\n    \"/api/offers\": {},\n    \"/api/messages\": {},\n    \"/api/admin/dashboard\": {}\n  }\n}"
+            },
+            {
+              "name": "Error Example",
+              "originalRequest": {},
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"message\": \"İstenen kaynak bulunamadı.\",\n  \"errors\": []\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "key": "categoryId",
+      "value": "1"
+    },
+    {
+      "key": "productId",
+      "value": "1"
+    },
+    {
+      "key": "userId",
+      "value": "1"
+    },
+    {
+      "key": "offerId",
+      "value": "1"
+    },
+    {
+      "key": "notificationId",
+      "value": "1"
+    },
+    {
+      "key": "contactMessageId",
+      "value": "1"
+    }
+  ]
+}
