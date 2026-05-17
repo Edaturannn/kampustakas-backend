@@ -3,8 +3,10 @@ WORKDIR /app
 
 COPY . .
 
-RUN dotnet restore TakasApp.sln
-RUN dotnet publish src/Takas.Api/Takas.Api.csproj -c Release -o /publish
+WORKDIR /app/src/Takas.Api
+
+RUN dotnet restore Takas.Api.csproj
+RUN dotnet publish Takas.Api.csproj -c Release -o /publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
