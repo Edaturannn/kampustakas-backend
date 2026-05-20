@@ -46,6 +46,22 @@ builder.Services.AddControllers()
 
 builder.Services.AddRouting(options => options.LowercaseUrls = true);
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy
+            .WithOrigins(
+                "http://localhost:3000",
+                "https://localhost:3000",
+                "https://kampustakas.com",
+                "https://www.kampustakas.com"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 var app = builder.Build();
 
 var isEfDesignTime = AppDomain.CurrentDomain.GetData("EF.IsDesignTime") as bool? ?? false;
@@ -107,6 +123,8 @@ if (!string.IsNullOrWhiteSpace(applicationUrls) &&
 {
     app.UseHttpsRedirection();
 }
+
+app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
 app.UseMiddleware<CurrentUserMiddleware>();
